@@ -1,4 +1,3 @@
-
 class SistemaEspecialistaOficina:
 
     def __init__(self):
@@ -66,7 +65,8 @@ class SistemaEspecialistaOficina:
                 "superaquecimento": "A temperatura do motor está muito alta? (s/n): ",
                 "falha_aceleracao": "O carro engasga ou perde força ao acelerar? (s/n): ",
                 "barulho_suspensao": "Ouve batidas ou estalos ao passar por buracos? (s/n): ",
-                "ar_condicionado_falha": "O ar-condicionado não gela ou apresenta cheiro estranho? (s/n): "
+                "ar_condicionado_falha": "O ar-condicionado não gela ou apresenta cheiro estranho? (s/n): ",
+                "luz_bateria": "A luz da bateria está acesa no painel com o motor ligado? (s/n): "
             }
 
             for fato, pergunta in perguntas.items():
@@ -169,10 +169,19 @@ class SistemaEspecialistaOficina:
                     "Recomendação: verificar a pressão e os componentes do sistema."
                 )
 
+            # R20 e R21: Possível falha no alternador ou sistema de carga.
+            if self.fatos.get("luz_bateria", False):
+                self.registrar_diagnostico(
+                    ("R19", "R20"),
+                    "Luz de bateria acesa no painel com o motor em funcionamento.",
+                    "Possível falha no alternador, correia rompida ou problema no sistema de carga da bateria. "
+                    "Recomendação: testar a tensão do alternador imediatamente para evitar pane elétrica total."
+                )
+
             # R19: nenhuma anormalidade foi identificada durante a triagem.
             if not self.diagnosticos:
                 self.registrar_passo(
-                    "R19",
+                    "R21",
                     "Nenhum dos sintomas investigados foi identificado."
                 )
 
@@ -224,4 +233,6 @@ class SistemaEspecialistaOficina:
 if __name__ == "__main__":
     sistema = SistemaEspecialistaOficina()
     sistema.executar()
+
+
 
