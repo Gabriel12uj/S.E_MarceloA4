@@ -1,0 +1,10 @@
+Abertura da Ficha (Memória de Trabalho):O sistema cria uma fichinha em branco (um dicionário em Python chamado self.fatos) para anotar as respostas que você vai dar.
+A Triagem Inicial (Coleta de Dados):
+Ele te faz a pergunta-chave: "O motor liga?"
+Se NÃO liga: Ele foca em investigar o sistema elétrico básico e a partida (luzes do painel e o barulho de tec-tec).
+Se LIGA: Ele abre um leque com os principais problemas de funcionamento (freio, temperatura, injeção, suspensão, ar-condicionado e a luz da bateria).
+O Motor de Inferência (O Cérebro de Regras):Aqui é onde a lógica de um sistema especialista brilha. Ele pega tudo o que você respondeu na triagem e passa por uma sequência de validações (if / elif):
+Cada combinação de sintomas ativa um código de regra específico (R01 até R21).
+Se os sintomas batem com algum problema mapeado, ele preenche um diagnóstico na hora.
+Se você responder que está tudo funcionando perfeitamente e nenhum problema for encontrado, ele ativa a regra de exceção (R21), dizendo que o carro passou direto na triagem.
+O Módulo de Explicação (A Prova dos Nove):Diferente de um programa comum que só te dá a resposta final, o sistema especialista registra cada passo que deu num histórico (self.raciocinio_log). No final, ele te mostra o diagnóstico e a lista exata com os códigos das regras ([R01], [R19], etc.) que justificam por que ele chegou àquela conclusão.
