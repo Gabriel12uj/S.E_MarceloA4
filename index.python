@@ -1,4 +1,5 @@
 class SistemaEspecialistaOficina:
+    """Sistema especialista simples para triagem de problemas automotivos."""
 
     def __init__(self):
         # Aqui ficam as respostas do usuário e o histórico das regras utilizadas.
@@ -20,16 +21,19 @@ class SistemaEspecialistaOficina:
         self.diagnosticos.append(resultado)
 
     def validar_resposta(self, pergunta):
-        # Só aceita respostas simples para evitar erros durante a análise.
+        """Valida a entrada do usuário aceitando variações de Sim ou Não."""
         while True:
             resposta = input(pergunta).strip().lower()
 
-            if resposta in ("s", "n"):
-                return resposta == "s"
+            if resposta in ("s", "sim"):
+                return True
+            if resposta in ("n", "nao", "não"):
+                return False
 
             print("\n[!] Resposta inválida. Digite apenas S ou N.")
 
     def exibir_cabecalho(self):
+        """Exibe o título e as instruções iniciais no terminal."""
         print("\n" + "=" * 58)
         print("             SISTEMA ESPECIALISTA")
         print("                AUTO OFICINA")
@@ -40,6 +44,7 @@ class SistemaEspecialistaOficina:
         print("-" * 58)
 
     def coletar_sintomas(self):
+        """Coleta os fatos iniciais do veículo por meio de perguntas ao usuário."""
         self.exibir_cabecalho()
 
         # Primeiro verificamos se o veículo consegue dar partida.
@@ -53,7 +58,7 @@ class SistemaEspecialistaOficina:
                 "As luzes do painel e os faróis acendem? (s/n): "
             )
 
-            self.fatos["barulho_teclc"] = self.validar_resposta(
+            self.fatos["barulho_tec_tec"] = self.validar_resposta(
                 "Ouve um barulho rápido de 'tec-tec' ao tentar ligar? (s/n): "
             )
 
@@ -88,7 +93,7 @@ class SistemaEspecialistaOficina:
                 )
 
             # R03 e R04: dificuldade para acionar o motor de partida.
-            elif self.fatos["barulho_teclc"]:
+            elif self.fatos["barulho_tec_tec"]:
                 self.registrar_diagnostico(
                     ("R03", "R04"),
                     "Painel aceso, mas o veículo apresenta barulho de tec-tec.",
@@ -169,8 +174,8 @@ class SistemaEspecialistaOficina:
                     "Recomendação: verificar a pressão e os componentes do sistema."
                 )
 
-            # R20 e R21: Possível falha no alternador ou sistema de carga.
-            if self.fatos.get("luz_bateria", False):
+            # R19 e R20: possível falha no alternador ou sistema de carga.
+            if self.fatos["luz_bateria"]:
                 self.registrar_diagnostico(
                     ("R19", "R20"),
                     "Luz de bateria acesa no painel com o motor em funcionamento.",
@@ -178,7 +183,7 @@ class SistemaEspecialistaOficina:
                     "Recomendação: testar a tensão do alternador imediatamente para evitar pane elétrica total."
                 )
 
-            # R19: nenhuma anormalidade foi identificada durante a triagem.
+            # R21: nenhuma anormalidade foi identificada durante a triagem.
             if not self.diagnosticos:
                 self.registrar_passo(
                     "R21",
@@ -191,6 +196,7 @@ class SistemaEspecialistaOficina:
                 )
 
     def exibir_resultado(self):
+        """Exibe os diagnósticos gerados e o histórico de regras aplicadas."""
         print("\n" + "=" * 58)
         print("                 RESULTADO DA ANÁLISE")
         print("=" * 58)
@@ -217,6 +223,11 @@ class SistemaEspecialistaOficina:
         print("O diagnóstico definitivo depende de uma avaliação técnica.")
 
     def executar(self):
+        """Orquestra a coleta de sintomas, o motor de inferência e a exibição final."""
+        self.fatos.clear()
+        self.raciocinio_log.clear()
+        self.diagnosticos.clear()
+
         try:
             self.coletar_sintomas()
             self.motor_inferencia()
@@ -233,6 +244,3 @@ class SistemaEspecialistaOficina:
 if __name__ == "__main__":
     sistema = SistemaEspecialistaOficina()
     sistema.executar()
-
-
-
