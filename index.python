@@ -1,375 +1,314 @@
 class SistemaEspecialistaOficina:
     """
-    Sistema especialista para realizar uma triagem inicial
-    de possíveis problemas em veículos.
-
-    O programa faz perguntas, analisa as respostas e apresenta
-    possíveis problemas e recomendações.
+    Aqui definimos o propósito do nosso sistema especialista para a apresentação:
+    - Empresa / Segmento: Auto Oficina (Prestação de Serviços — Oficina Mecânica).
+    - Problema de negócio: fazer a triagem inicial dos sintomas que o cliente
+      relata sobre o carro e sugerir orientações antes de passar pelo mecânico.
     """
 
-    #Gabriel começa aqui 
-
+    # Gabriel inicia aqui
     def __init__(self):
-        # Aqui ficam as respostas do motorista.
-        # E como uma ficha que vamos preenchendo.
-        # Ele basicamente armazena a resposta do usuario.
+        # Nome da oficina e o tipo de serviço que ela presta
+        self.empresa = "Auto Oficina — Prestação de Serviços (Oficina Mecânica)"
+        # Resumo do problema que o sistema ajuda a resolver no dia a dia
+        self.problema_negocio = (
+            "Triagem inicial de problemas automotivos e direcionamento de "
+            "recomendações técnicas a partir dos sintomas informados."
+        )
+
+        # Guarda as respostas do usuário (True para 's', False para 'n')
         self.fatos = {}
+        # Guarda o passo a passo de como o sistema chegou às conclusões (módulo de explicação)
+        self.raciocinio = []
+        # Guarda os diagnósticos e recomendações finais que vão aparecer na tela
+        self.conclusoes = []
+        # Guarda os códigos das regras que foram disparadas (ex.: R01, R04, R21)
+        self.regras_ativadas = []
+        # Carrega todas as regras da base de conhecimento logo ao criar o objeto
+        self.regras = self._carregar_regras()
 
-        # Aqui guardamos o caminho que o sistema percorreu.
-        # Ele consegue explicar como chegou ao resultado.
-        #E basicamente as regras que foram ativadas.
-        self.raciocinio_log = []
+    def _carregar_regras(self):
+        # Aqui ficam 20 regras de falhas possíveis (R01 a R20).
+        # Se nenhuma delas bater com os sintomas, a regra R21 entra como fallback/exceção.
+        return [
+            # --- Quando o motor não liga (regras R01 a R03) ---
+            {
+                "id": "R01",
+                # Só ativa se o motor não liga E as luzes do painel não acendem
+                "condicao": lambda f: not f["motor_liga"] and not f["luzes_paineis"],
+                "fatos_desc": "motor_liga=False, luzes_paineis=False",
+                "diagnostico": "Possível falha de alimentação elétrica (motor não liga e painel apagado).",
+                "recomendacao": "Verificar carga/bornes da bateria, cabos e conexões elétricas.",
+            },
+            {
+                "id": "R02",
+                # Motor não liga, painel acende, mas faz aquele barulhinho rápido de 'tec-tec'
+                "condicao": lambda f: not f["motor_liga"] and f["luzes_paineis"] and f["barulho_tec_tec"],
+                "fatos_desc": "motor_liga=False, luzes_paineis=True, barulho_tec_tec=True",
+                "diagnostico": "Possível falha na partida ou bateria fraca sob carga (ruído 'tec-tec').",
+                "recomendacao": "Testar a bateria sob carga e inspecionar motor de partida e conexões.",
+            },
+            {
+                "id": "R03",
+                # Motor não liga, painel acende e não faz barulho de 'tec-tec'
+                "condicao": lambda f: not f["motor_liga"] and f["luzes_paineis"] and not f["barulho_tec_tec"],
+                "fatos_desc": "motor_liga=False, luzes_paineis=True, barulho_tec_tec=False",
+                "diagnostico": "Possível falha no circuito de ignição, fusíveis ou motor de partida sem acionamento.",
+                "recomendacao": "Verificar fusíveis/relés, circuito de ignição e motor de partida.",
+            },
 
-        # Aqui ficam os diagnósticos encontrados.
-        # Pode aparecer mais de um problema na mesma análise.
-        self.diagnosticos = []
+            # --- Quando o motor liga: sistema de freios e arrefecimento (regras R04 a R06) ---
+            {
+                "id": "R04",
+                # Motor liga e há chiado ou rangido ao frear
+                "condicao": lambda f: f["motor_liga"] and f["barulho_freio"],
+                "fatos_desc": "motor_liga=True, barulho_freio=True",
+                "diagnostico": "Possível desgaste no sistema de freios (chiado ou rangido ao frear).",
+                "recomendacao": "Inspecionar pastilhas, discos e demais componentes de frenagem.",
+            },
+            {
+                "id": "R05",
+                # Motor esquenta demais, mas não aparece vazamento de fluido
+                "condicao": lambda f: f["motor_liga"] and f["superaquecimento"] and not f["vazamento_fluido"],
+                "fatos_desc": "motor_liga=True, superaquecimento=True, vazamento_fluido=False",
+                "diagnostico": "Risco de superaquecimento do motor sem vazamento visível imediato.",
+                "recomendacao": "Encostar em local seguro, desligar o motor e verificar ventoinha, termostato e nível do fluido (jamais abrir reservatório quente).",
+            },
+            {
 
-    # ---------------------------------------------------------
-    # PARTE 1 - FUNÇÕES PARA GUARDAR O RACIOCÍNIO
-    # ---------------------------------------------------------
+                #Matheus inicia aqui
+                "id": "R06",
+                # Motor esquenta demais E há indício de vazamento de fluido
+                "condicao": lambda f: f["motor_liga"] and f["superaquecimento"] and f["vazamento_fluido"],
+                "fatos_desc": "motor_liga=True, superaquecimento=True, vazamento_fluido=True",
+                "diagnostico": "Superaquecimento do motor associado a possível vazamento no sistema de arrefecimento.",
+                "recomendacao": "Desligar o veículo com segurança, não rodar e acionar guincho/oficina para teste de estanqueidade.",
+            },
 
-    def registrar_passo(self, regra_id, descricao):
-        # Cada vez que uma regra for utilizada,
-        # guardamos uma anotação no histórico.
-        self.raciocinio_log.append(f"[{regra_id}] {descricao}")
+            # --- Quando o motor liga: injeção eletrônica e aceleração (regras R07 a R10) ---
+            {
+                "id": "R07",
+                # Luz de injeção acesa junto com engasgos ou perda de força ao acelerar
+                "condicao": lambda f: f["motor_liga"] and f["luz_injecao"] and f["falha_aceleracao"],
+                "fatos_desc": "motor_liga=True, luz_injecao=True, falha_aceleracao=True",
+                "diagnostico": "Falha em gerenciamento do motor/injeção com perda de desempenho ou engasgos.",
+                "recomendacao": "Realizar diagnóstico com scanner automotivo para leitura dos códigos de falha (DTC).",
+            },
+            {
+                "id": "R08",
+                # Luz de injeção acesa no painel, porém sem falha perceptível na aceleração
+                "condicao": lambda f: f["motor_liga"] and f["luz_injecao"] and not f["falha_aceleracao"],
+                "fatos_desc": "motor_liga=True, luz_injecao=True, falha_aceleracao=False",
+                "diagnostico": "Alerta registrado na injeção eletrônica sem perda aparente de força no momento.",
+                "recomendacao": "Verificar códigos de falha com scanner automotivo para evitar agravamento.",
+            },
+            {
+                "id": "R09",
+                # Carro falha ao acelerar, mas a luz de injeção não está acesa
+                "condicao": lambda f: f["motor_liga"] and not f["luz_injecao"] and f["falha_aceleracao"],
+                "fatos_desc": "motor_liga=True, luz_injecao=False, falha_aceleracao=True",
+                "diagnostico": "Falha de aceleração/resposta sem luz de injeção acesa (possível combustível, velas, bobinas ou admissão).",
+                "recomendacao": "Verificar sistema de ignição, alimentação de combustível e filtro de ar/combustível.",
+            },
+            {
+                "id": "R10",
+                # Falha na aceleração junto com fumaça anormal saindo pelo escapamento
+                "condicao": lambda f: f["motor_liga"] and f["falha_aceleracao"] and f["fumaca_escapamento"],
+                "fatos_desc": "motor_liga=True, falha_aceleracao=True, fumaca_escapamento=True",
+                "diagnostico": "Falha de desempenho acompanhada de fumaça no escapamento (possível queima irregular ou óleo/mistura).",
+                "recomendacao": "Agendar avaliação mecânica breve e verificar níveis de óleo e fluido de arrefecimento.",
+            },
 
-    def registrar_diagnostico(
-        self, regra_identificacao, regra_recomendacao,
-        fatos_usados, descricao, recomendacao
-    ):
-        # Primeiro mostramos quais respostas fizeram
-        # a regra ser ativada.
-        self.registrar_passo(
-            regra_identificacao,
-            f"Fatos identificados: {fatos_usados}."
-        )
+            # --- Quando o motor liga: suspensão, direção e fumaça (regras R11 a R14) ---
+            {
+                "id": "R11",
+                # Batidas ou estalos ao passar por buracos indicam possível desgaste na suspensão
+                "condicao": lambda f: f["motor_liga"] and f["barulho_suspensao"],
+                "fatos_desc": "motor_liga=True, barulho_suspensao=True",
+                "diagnostico": "Possível folga ou desgaste na suspensão (batidas ou estalos em buracos).",
+                "recomendacao": "Inspecionar amortecedores, buchas, pivôs, bieletas e terminais.",
+            },
+            {
+                "id": "R12",
+                # Vibração anormal no volante ou direção
+                "condicao": lambda f: f["motor_liga"] and f["vibracao_direcao"],
+                "fatos_desc": "motor_liga=True, vibracao_direcao=True",
+                "diagnostico": "Possível desbalanceamento de rodas, desalinhamento ou desgaste em pneus/suspensão.",
+                "recomendacao": "Realizar balanceamento, alinhamento e inspeção de pneus e rodas.",
+            },
+            {
+                "id": "R13",
+                # Junta barulho de suspensão e vibração na direção ao mesmo tempo
+                "condicao": lambda f: f["motor_liga"] and f["barulho_suspensao"] and f["vibracao_direcao"],
+                "fatos_desc": "motor_liga=True, barulho_suspensao=True, vibracao_direcao=True",
+                "diagnostico": "Combinação de ruído na suspensão e vibração na direção (maior chance de folga estrutural/pneus).",
+                "recomendacao": "Priorizar inspeção completa de suspensão, direção, rodas e pneus.",
+            },
+            {
+                "id": "R14",
+                # Sai fumaça do escapamento, mesmo sem o carro falhar ao acelerar
+                "condicao": lambda f: f["motor_liga"] and f["fumaca_escapamento"] and not f["falha_aceleracao"],
+                "fatos_desc": "motor_liga=True, fumaca_escapamento=True, falha_aceleracao=False",
+                "diagnostico": "Presença de fumaça no escapamento mesmo sem falha evidente na aceleração.",
+                "recomendacao": "Observar cor da fumaça e verificar nível de óleo lubrificante e sistema de exaustão.",
+            },
 
-        # Depois registramos a orientação relacionada ao problema.
-        self.registrar_passo(
-            regra_recomendacao,
-            f"Orientação: {recomendacao}"
-        )
+            # --- Quando o motor liga: carga elétrica, ar-condicionado, odores e vazamentos (regras R15 a R20) ---
+            {
+                "id": "R15",
+                # Luz da bateria continua acesa mesmo depois que o motor já ligou
+                "condicao": lambda f: f["motor_liga"] and f["luz_bateria"],
+                "fatos_desc": "motor_liga=True, luz_bateria=True",
+                "diagnostico": "Possível falha no sistema de carga (alternador, correia do alternador ou regulador de tensão).",
+                "recomendacao": "Testar tensão de carga do alternador e inspecionar correia e conexões.",
+            },
+            {
+                "id": "R16",
+                # Ar-condicionado com falha ou cheiro irregular, sem cheiro de queimado
+                "condicao": lambda f: f["motor_liga"] and f["ar_condicionado_falha"] and not f["odor_queimado"],
+                "fatos_desc": "motor_liga=True, ar_condicionado_falha=True, odor_queimado=False",
+                "diagnostico": "Funcionamento irregular do ar-condicionado (falta de refrigeração ou odor de mofo/filtro).",
+                "recomendacao": "Verificar filtro de cabine, gás refrigerante/vazamentos e compressor.",
+            },
+            #Joao inicia aqui
+            {
+                "id": "R17",
+                # Cheiro de queimado sem sinal de vazamento de fluido
+                "condicao": lambda f: f["motor_liga"] and f["odor_queimado"] and not f["vazamento_fluido"],
+                "fatos_desc": "motor_liga=True, odor_queimado=True, vazamento_fluido=False",
+                "diagnostico": "Odor de queimado relatado (pode envolver atrito de freio/embreagem ou componente elétrico).",
+                "recomendacao": "Verificar freios, embreagem e chicotes/componentes elétricos próximos a fontes de calor.",
+            },
+            {
+                "id": "R18",
+                # Cheiro de queimado junto com vazamento de fluido (situação de maior atenção)
+                "condicao": lambda f: f["motor_liga"] and f["odor_queimado"] and f["vazamento_fluido"],
+                "fatos_desc": "motor_liga=True, odor_queimado=True, vazamento_fluido=True",
+                "diagnostico": "Odor de queimado com indício de vazamento (risco de fluido caindo sobre parte quente).",
+                "recomendacao": "Interromper o uso por precaução e realizar inspeção imediata de vazamentos e fiação.",
+            },
+            {
+                "id": "R19",
+                # Há vazamento de fluido, mas sem superaquecimento nem cheiro de queimado
+                "condicao": lambda f: f["motor_liga"] and f["vazamento_fluido"] and not f["superaquecimento"] and not f["odor_queimado"],
+                "fatos_desc": "motor_liga=True, vazamento_fluido=True, superaquecimento=False, odor_queimado=False",
+                "diagnostico": "Possível vazamento de fluido (óleo, arrefecimento, direção ou freio) sem superaquecimento imediato.",
+                "recomendacao": "Identificar o tipo e a origem do vazamento na oficina e completar níveis apenas com especificação correta.",
+            },
+            {
+                "id": "R20",
+                # Problema na carga elétrica (luz da bateria) junto com falha no ar-condicionado
+                "condicao": lambda f: f["motor_liga"] and f["luz_bateria"] and f["ar_condicionado_falha"],
+                "fatos_desc": "motor_liga=True, luz_bateria=True, ar_condicionado_falha=True",
+                "diagnostico": "Falha no sistema de carga afetando também o acionamento/desempenho do ar-condicionado.",
+                "recomendacao": "Verificar correia acessória, alternador e alimentação elétrica do compressor/ventilação.",
+            },
+        ]
 
-        # Por último, guardamos o diagnóstico para mostrar na tela.
-        self.diagnosticos.append(
-            f"{descricao}\nRecomendação: {recomendacao}"
-        )
-
-    # ---------------------------------------------------------
-    # PARTE 2 - VALIDAR AS RESPOSTAS DO USUÁRIO
-    # ---------------------------------------------------------
-
-    def validar_resposta(self, pergunta):
-
-        # O while mantém a pergunta na tela até receber S ou N.
+    # --- Coleta e validação das respostas do usuário ---
+    def _ler_sn(self, pergunta):
+        # Fica repetindo até o usuário digitar 's' ou 'n' (não importa maiúscula ou espaço extra)
         while True:
+            r = input(pergunta).strip().lower()
+            if r in ("s", "n"):
+                # Retorna True se digitou 's', ou False se digitou 'n'
+                return r == "s"
+            # Se digitou algo inválido (tipo "talvez" ou número), avisa e pergunta de novo
+            print("[!] Entrada inválida. Digite apenas 'S' (Sim) ou 'N' (Não).")
 
-            resposta = input(pergunta).strip().lower()
+    def coletar_informacoes(self):
+        # Mostra o cabeçalho com a empresa e o objetivo antes de começar as perguntas
+        print("\n" + "=" * 62)
+        print(f"EMPRESA: {self.empresa}\nOBJETIVO: {self.problema_negocio}")
+        print("=" * 62 + "\nResponda com S (Sim) ou N (Não).\n")
 
-            if resposta == "s":
-                return True  # S significa Sim.
+        # Pergunta inicial: define se vamos investigar falha na partida ou carro funcionando
+        self.fatos["motor_liga"] = self._ler_sn("1. O motor do veículo consegue ligar? (s/n): ")
+        if not self.fatos["motor_liga"]:
+            # Se o motor não liga, faz só as perguntas de painel/luzes e barulho 'tec-tec'
+            self.fatos["luzes_paineis"] = self._ler_sn("2. As luzes do painel e faróis acendem? (s/n): ")
+            self.fatos["barulho_tec_tec"] = self._ler_sn("3. Há barulho rápido de 'tec-tec' ao tentar ligar? (s/n): ")
+            # Sai da função aqui, pois não faz sentido perguntar sintomas de carro rodando
+            return
 
-            elif resposta == "n":
-                return False  # N significa Não.
+        # Se o motor liga, prepara as perguntas dos demais sintomas do veículo
+        perguntas = {
+            "barulho_freio": "2. Há chiado ou rangido ao pisar no freio? (s/n): ",
+            "superaquecimento": "3. A temperatura do motor está muito alta? (s/n): ",
+            "luz_injecao": "4. A luz de injeção está acesa no painel? (s/n): ",
+            "falha_aceleracao": "5. O veículo engasga ou perde força ao acelerar? (s/n): ",
+            "barulho_suspensao": "6. Há batidas ou estalos ao passar por buracos? (s/n): ",
+            "vibracao_direcao": "7. Há vibração anormal no volante/direção? (s/n): ",
+            "fumaca_escapamento": "8. Há fumaça anormal saindo pelo escapamento? (s/n): ",
+            "luz_bateria": "9. A luz da bateria permanece acesa com o motor ligado? (s/n): ",
+            "ar_condicionado_falha": "10. O ar-condicionado não gela ou apresenta odor irregular? (s/n): ",
+            "odor_queimado": "11. Há cheiro de queimado no veículo? (s/n): ",
+            "vazamento_fluido": "12. Há sinais de vazamento de fluido embaixo ou no motor? (s/n): ",
+        }
+        # Percorre cada pergunta, valida a resposta e salva no dicionário de fatos
+        for chave, texto in perguntas.items():
+            self.fatos[chave] = self._ler_sn(texto)
 
-            else:
-                # Se a pessoa apertar Enter ou digitar outra coisa,
-                # explicamos o erro e perguntamos novamente.
-                print("\n[!] Resposta inválida. Digite apenas S ou N.")
-
-    # ---------------------------------------------------------
-    # PARTE 3 - APRESENTAÇÃO E COLETA DOS SINTOMAS
-    # ---------------------------------------------------------
-
-    def exibir_cabecalho(self):
-
-        print("\n" + "=" * 58)
-        print("                 SISTEMA ESPECIALISTA")
-        print("                      AUTO OFICINA")
-        print("=" * 58)
-        print("       Diagnóstico inicial de possíveis problemas")
-        print("-" * 58)
-        print("Responda às perguntas utilizando S (Sim) ou N (Não).")
-        print("-" * 58)
-
-    def coletar_sintomas(self):
-
-        # Primeiro mostramos o nome do sistema e as instruções.
-        self.exibir_cabecalho()
-
-        # PRIMEIRA PERGUNTA:
-        # Ela divide a análise em dois caminhos.
-        self.fatos["motor_liga"] = self.validar_resposta(
-            "\nO motor do carro consegue ligar? (s/n): "
+    # --- Motor de inferência (encadeamento para frente) e explicação ---
+    def _registrar(self, regra_id, fatos_desc, diagnostico, recomendacao):
+        # Anota qual regra disparou
+        self.regras_ativadas.append(regra_id)
+        # Monta o texto final que será exibido como diagnóstico e recomendação
+        self.conclusoes.append(f"[{regra_id}] {diagnostico}\n    Recomendação: {recomendacao}")
+        # Registra no log como aquela conclusão foi alcançada a partir dos fatos
+        self.raciocinio.append(
+            f"Regra {regra_id} ativada por ({fatos_desc}) -> {diagnostico} | Recomendação: {recomendacao}"
         )
 
-        if not self.fatos["motor_liga"]:
+    def executar_inferencia(self):
+        # Registra o ponto de partida do encadeamento para frente: todos os fatos coletados
+        self.raciocinio.append(
+            "Encadeamento para frente com fatos: " + ", ".join(f"{k}={v}" for k, v in self.fatos.items())
+        )
+        # Testa cada regra da base; se a condição der True, registra a regra
+        for regra in self.regras:
+            if regra["condicao"](self.fatos):
+                self._registrar(regra["id"], regra["fatos_desc"], regra["diagnostico"], regra["recomendacao"])
 
-            # Se o motor não liga, investigamos a parte elétrica
-            # e o sistema de partida.
-            self.fatos["luzes_paineis"] = self.validar_resposta(
-                "As luzes do painel e os faróis acendem? (s/n): "
-            )
-
-            self.fatos["barulho_tec_tec"] = self.validar_resposta(
-                "Ouve um barulho rápido de 'tec-tec' ao tentar ligar? (s/n): "
-            )
-
-        else:
-
-            # Se o motor liga, podemos investigar os outros sistemas.
-            # O dicionário relaciona o nome do fato com a pergunta.
-            perguntas = {
-
-                "barulho_freio": "Ouve chiado ou rangido ao pisar no freio? (s/n): ",
-
-                "luz_injecao": "A luz de injeção está acesa no painel? (s/n): ",
-
-                "superaquecimento": "A temperatura do motor está muito alta? (s/n): ",
-
-                "falha_aceleracao": "O carro engasga ou perde força ao acelerar? (s/n): ",
-
-                "barulho_suspensao": "Ouve batidas ou estalos ao passar por buracos? (s/n): ",
-
-                "ar_condicionado_falha": "O ar-condicionado não gela ou apresenta cheiro estranho? (s/n): ",
-
-                "luz_bateria": "A luz da bateria está acesa com o motor ligado? (s/n): "
-            }
-
-            # Percorremos as perguntas sem precisar escrever
-            # o mesmo comando várias vezes.
-            for nome_fato, pergunta in perguntas.items():
-
-                self.fatos[nome_fato] = self.validar_resposta(pergunta)
-
-                #--- Gabriel para de falar aqui ---
-
-    # ---------------------------------------------------------
-    # PARTE 4 - MOTOR DE INFERÊNCIA E BASE DE REGRAS
-    # ---------------------------------------------------------
-    
-    #Matheus começa a explicação aqui
-    def motor_inferencia(self):
-
-        """
-        Aqui acontece a parte principal do sistema especialista.
-
-        O programa analisa os fatos coletados e verifica quais regras
-        combinam com as respostas.
-
-        Esse processo é um exemplo de encadeamento para frente:
-        começamos com os fatos e usamos as regras para chegar
-        a possíveis conclusões.
-        """
-
-        # Guardamos quantos diagnósticos existiam antes da análise.
-        quantidade_inicial = len(self.diagnosticos)
-
-        # CAMINHO A: O MOTOR NÃO CONSEGUE LIGAR.
-
-        if not self.fatos["motor_liga"]:
-
-            # R01 e R02 - Painel apagado: possível problema elétrico.
-            if not self.fatos["luzes_paineis"]:
-
-                self.registrar_diagnostico(
-                    "R01", "R02",
-                    "motor não liga; painel e faróis não acendem",
-                    "O veículo não liga e o painel está apagado. "
-                    "Pode existir um problema na alimentação elétrica.",
-                    "Verificar a bateria, os cabos e as conexões elétricas."
-                )
-
-            # R03 e R04 - Painel aceso e barulho de tec-tec.
-            elif self.fatos["barulho_tec_tec"]:
-
-                self.registrar_diagnostico(
-                    "R03", "R04",
-                    "motor não liga; painel acende; existe barulho de tec-tec",
-                    "O veículo apresenta dificuldade no momento da partida.",
-                    "Testar a carga da bateria e verificar o motor de partida."
-                )
-
-            # R05 e R06 - Painel aceso, mas sem o barulho informado.
-            else:
-
-                self.registrar_diagnostico(
-                    "R05", "R06",
-                    "motor não liga; painel acende; não existe barulho de tec-tec",
-                    "O veículo não apresenta sinal sonoro ao tentar dar partida.",
-                    "Verificar o circuito de ignição, os fusíveis e o motor de partida."
-                )
-
-        # CAMINHO B: O MOTOR CONSEGUE LIGAR.
-
-        else:
-
-            # R07 e R08 - Possível problema no sistema de freios.
-            if self.fatos["barulho_freio"]:
-
-                self.registrar_diagnostico(
-                    "R07", "R08",
-                    "motor liga; existe chiado ou rangido ao frear",
-                    "Foram identificados ruídos durante a frenagem.",
-                    "Solicitar uma inspeção das pastilhas e dos discos de freio."
-                )
-
-                #--- Matheus termina aqui ---
-
-            # R09 e R10 - Temperatura do motor muito alta.
-
-            #Joao inicia aqui 
-            if self.fatos["superaquecimento"]:
-
-                self.registrar_diagnostico(
-                    "R09", "R10",
-                    "motor liga; temperatura está muito alta",
-                    "O motor apresenta sinais de superaquecimento.",
-                    "Desligar o veículo em segurança e procurar assistência. "
-                    "Nunca abrir o reservatório com o motor quente."
-                )
-
-            # R11 e R12 - Luz de injeção junto com perda de força.
-            if self.fatos["luz_injecao"] and self.fatos["falha_aceleracao"]:
-
-                self.registrar_diagnostico(
-                    "R11", "R12",
-                    "luz de injeção acesa; carro perde força ou engasga",
-                    "Existe um alerta de injeção acompanhado de perda de desempenho.",
-                    "Realizar uma leitura dos códigos com scanner automotivo."
-                )
-
-            # R13 e R14 - Luz de injeção, mas sem perda de força.
-            elif self.fatos["luz_injecao"]:
-
-                self.registrar_diagnostico(
-                    "R13", "R14",
-                    "luz de injeção acesa; não há perda de força relatada",
-                    "A luz de injeção está acesa, mesmo sem perda aparente de força.",
-                    "Verificar os códigos de falha com um scanner automotivo."
-                )
-
-            # R15 e R16 - Ruídos na suspensão.
-            if self.fatos["barulho_suspensao"]:
-
-                self.registrar_diagnostico(
-                    "R15", "R16",
-                    "motor liga; existem batidas ou estalos ao passar por buracos",
-                    "Foram identificados ruídos que podem estar ligados à suspensão.",
-                    "Inspecionar amortecedores, buchas, pivôs e demais componentes."
-                )
-
-            # R17 e R18 - Ar-condicionado com funcionamento irregular.
-            if self.fatos["ar_condicionado_falha"]:
-
-                self.registrar_diagnostico(
-                    "R17", "R18",
-                    "motor liga; ar-condicionado não gela ou apresenta cheiro estranho",
-                    "O sistema de ar-condicionado apresenta funcionamento irregular.",
-                    "Verificar o filtro de cabine, possíveis vazamentos e o compressor."
-                )
-
-            # R19 e R20 - Luz da bateria acesa com o motor funcionando.
-            if self.fatos["luz_bateria"]:
-
-                self.registrar_diagnostico(
-                    "R19", "R20",
-                    "motor liga; luz da bateria permanece acesa no painel",
-                    "A luz da bateria está acesa com o motor em funcionamento.",
-                    "Verificar o alternador, a correia e o sistema de carga."
-                )
-
-        # R21 - Nenhuma das condições anteriores foi encontrada.
-        # Essa regra só entra se nenhum diagnóstico novo foi registrado.
-        if len(self.diagnosticos) == quantidade_inicial:
-
-            self.registrar_passo(
+        # Se nenhuma das regras R01-R20 foi ativada, aciona a regra R21 (caso sem falha específica)
+        if not self.conclusoes:
+            self._registrar(
                 "R21",
-                "Nenhum dos sintomas investigados foi identificado."
+                "nenhuma regra R01-R20 ativada",
+                "Não foi possível concluir um diagnóstico específico com as informações fornecidas.",
+                "Manter a manutenção preventiva e, se houver comportamento atípico, fazer avaliação presencial.",
             )
 
-            self.diagnosticos.append(
-                "Nenhuma anormalidade foi identificada durante esta triagem.\n"
-                "Recomendação: manter as revisões e a manutenção preventiva."
-            )
+    # --- Exibição dos resultados e tratamento de erros ---
+    def exibir_resultado_e_explicacao(self):
+        # Mostra primeiro as conclusões e recomendações para o usuário/atendente
+        print("\n" + "=" * 62 + "\nCONCLUSÕES E RECOMENDAÇÕES\n" + "=" * 62)
+        for item in self.conclusoes:
+            print(f"\n• {item}")
 
-    # ---------------------------------------------------------
-    # PARTE 5 - MOSTRAR O RESULTADO E EXPLICAR O RACIOCÍNIO
-    # ---------------------------------------------------------
+        # Em seguida, mostra o "por que/como": quais regras rodaram e qual foi o raciocínio
+        print("\n" + "=" * 62 + "\nEXPLICAÇÃO DO RACIOCÍNIO (COMO E POR QUE)\n" + "=" * 62)
+        print("Regras ativadas:", ", ".join(self.regras_ativadas))
+        for passo in self.raciocinio:
+            print(f"  - {passo}")
 
-    def exibir_resultado(self):
+        # Reforça que é uma triagem inicial e não substitui o diagnóstico do mecânico
+        print("\nObservação: triagem inicial; o diagnóstico definitivo requer avaliação técnica.")
 
-        print("\n" + "=" * 58)
-        print("                  RESULTADO DA ANÁLISE")
-        print("=" * 58)
-
-        # Mostramos todos os diagnósticos encontrados.
-        # Pode existir mais de um problema na mesma análise.
-        for indice, diagnostico in enumerate(self.diagnosticos, start=1):
-
-            print(f"\n[DIAGNÓSTICO {indice}]")
-            print("-" * 58)
-            print(diagnostico)
-
-        # Agora mostramos como o sistema chegou às conclusões.
-        print("\n" + "=" * 58)
-        print("               EXPLICAÇÃO DO RACIOCÍNIO")
-        print("=" * 58)
-
-        print("\nVeja quais fatos e regras foram utilizados:\n")
-
-        for passo in self.raciocinio_log:
-
-            print(f"  > {passo}")
-
-        print("\n" + "=" * 58)
-        print("                FIM DA ANÁLISE - AUTO OFICINA")
-        print("=" * 58)
-
-        print("\nAtenção: os resultados são sugestões de triagem.")
-        print("O diagnóstico definitivo depende de uma avaliação técnica.")
-
-    # ---------------------------------------------------------
-    # PARTE 6 - COLOCAR O PROGRAMA PARA RODAR
-    # ---------------------------------------------------------
-
-    def executar(self):
-
-        # Esse método organiza a ordem das etapas:
-        # 1. Perguntar os sintomas.
-        # 2. Analisar as respostas.
-        # 3. Mostrar o resultado.
-
+    def rodar(self):
+        # Usa try/except para evitar que o programa quebre feio se ocorrer algum erro ou interrupção
         try:
-
-            self.coletar_sintomas()
-
-            self.motor_inferencia()
-
-            self.exibir_resultado()
-
+            self.coletar_informacoes()
+            self.executar_inferencia()
+            self.exibir_resultado_e_explicacao()
         except KeyboardInterrupt:
-
-            # Acontece se o usuário apertar Ctrl + C.
-            print("\n\n[!] Análise interrompida pelo usuário.")
-
+            # Caso a pessoa aperte Ctrl + C durante a execução
+            print("\n\n[!] Execução interrompida pelo usuário.")
         except Exception as erro:
-
-            # Se acontecer algum erro inesperado,
-            # mostramos a mensagem para facilitar a identificação.
-            print(f"\n[ERRO] Ocorreu um problema durante a execução: {erro}")
+            # Captura qualquer erro inesperado e mostra uma mensagem amigável
+            print(f"\n[ERRO] Falha inesperada: {erro}")
 
 
-# -------------------------------------------------------------
-# INÍCIO DO PROGRAMA
-# -------------------------------------------------------------
-
-# Essa condição verifica se este arquivo foi aberto diretamente.
-# Se foi, criamos o sistema e começamos a execução.
-
+# Garante que o sistema só rode quando executarmos este arquivo diretamente
 if __name__ == "__main__":
-
-    sistema = SistemaEspecialistaOficina()
-
-    sistema.executar()
-#--- Joao termina aqui --- Tentei separar o que cada um vai dizer no comentario do proprio codigo, pra voce isso ta bom?
+    SistemaEspecialistaOficina().rodar()
