@@ -1,10 +1,20 @@
-Abertura da Ficha (Memória de Trabalho):O sistema cria uma fichinha em branco (um dicionário em Python chamado self.fatos) para anotar as respostas que você vai dar.
-A Triagem Inicial (Coleta de Dados):
-Ele te faz a pergunta-chave: "O motor liga?"
-Se NÃO liga: Ele foca em investigar o sistema elétrico básico e a partida (luzes do painel e o barulho de tec-tec).
-Se LIGA: Ele abre um leque com os principais problemas de funcionamento (freio, temperatura, injeção, suspensão, ar-condicionado e a luz da bateria).
-O Motor de Inferência (O Cérebro de Regras):Aqui é onde a lógica de um sistema especialista brilha. Ele pega tudo o que você respondeu na triagem e passa por uma sequência de validações (if / elif):
-Cada combinação de sintomas ativa um código de regra específico (R01 até R21).
-Se os sintomas batem com algum problema mapeado, ele preenche um diagnóstico na hora.
-Se você responder que está tudo funcionando perfeitamente e nenhum problema for encontrado, ele ativa a regra de exceção (R21), dizendo que o carro passou direto na triagem.
-O Módulo de Explicação (A Prova dos Nove):Diferente de um programa comum que só te dá a resposta final, o sistema especialista registra cada passo que deu num histórico (self.raciocinio_log). No final, ele te mostra o diagnóstico e a lista exata com os códigos das regras ([R01], [R19], etc.) que justificam por que ele chegou àquela conclusão.
+# Sistema Especialista — Triagem de Oficina Mecânica
+
+Protótipo de Sistema Especialista desenvolvido em **Python** para a disciplina de **Programação de Sistemas Especialistas** (Universidade Veiga de Almeida).
+
+## 🎯 Objetivo e Contexto de Negócio
+* **Empresa / Segmento:** Auto Oficina — Prestação de Serviços (Oficina Mecânica).
+* **Problema de Negócio:** Realizar a triagem inicial dos sintomas relatados pelo cliente sobre o veículo, fornecendo possíveis diagnósticos e orientações técnicas antes da avaliação presencial do mecânico.
+
+## ⚙️ Como Funciona
+* **Representação do Conhecimento:** Base composta por fatos booleanos coletados durante o atendimento e **21 regras de produção** (`R01` a `R20` para falhas específicas + `R21` para tratamento de exceção/ausência de diagnóstico conclusivo).
+* **Motor de Inferência:** Utiliza **encadeamento para frente** (*forward chaining*), avaliando os fatos informados contra todas as condições da base de regras.
+* **Módulo de Explicação ("Como e Por quê"):** Exibe ao final do atendimento quais regras foram disparadas e o log passo a passo do raciocínio utilizado para chegar às conclusões.
+* **Tratamento de Exceções:** Validação rigorosa de entradas (`S`/`N`), captura de interrupções e regra de contingência (`R21`) caso nenhum sintoma específico seja identificado.
+
+## 🚀 Como Executar
+1. Certifique-se de ter o **Python 3** instalado (não requer bibliotecas externas).
+2. Clone o repositório e acesse a pasta do projeto:
+   ```bash
+   git clone <URL_DO_REPOSITORIO>
+   cd <PASTA_DO_PROJETO>
