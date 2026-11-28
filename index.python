@@ -170,7 +170,7 @@ class SistemaEspecialistaOficina:
                 "diagnostico": "Funcionamento irregular do ar-condicionado (falta de refrigeração ou odor de mofo/filtro).",
                 "recomendacao": "Verificar filtro de cabine, gás refrigerante/vazamentos e compressor.",
             },
-            #Joao inicia aqui
+            #Joao inicia aqui - Falando sobre algumas das condições estabelecidas pra o diagnóstico.
             {
                 "id": "R17",
                 # Cheiro de queimado sem sinal de vazamento de fluido
@@ -231,7 +231,7 @@ class SistemaEspecialistaOficina:
             # Sai da função aqui, pois não faz sentido perguntar sintomas de carro rodando
             return
 
-        # Se o motor liga, prepara as perguntas dos demais sintomas do veículo
+        # Se o motor liga, prepara as perguntas dos demais possíveis sintomas do veículo
         perguntas = {
             "barulho_freio": "2. Há chiado ou rangido ao pisar no freio? (s/n): ",
             "superaquecimento": "3. A temperatura do motor está muito alta? (s/n): ",
@@ -270,7 +270,7 @@ class SistemaEspecialistaOficina:
             if regra["condicao"](self.fatos):
                 self._registrar(regra["id"], regra["fatos_desc"], regra["diagnostico"], regra["recomendacao"])
 
-        # Se nenhuma das regras R01-R20 foi ativada, aciona a regra R21 (caso sem falha específica)
+        # Se nenhuma das regras R01-R20 foi ativada, aciona a regra R21 (caso sem falha específica encontrada)
         if not self.conclusoes:
             self._registrar(
                 "R21",
@@ -286,7 +286,7 @@ class SistemaEspecialistaOficina:
         for item in self.conclusoes:
             print(f"\n• {item}")
 
-        # Em seguida, mostra o "por que/como": quais regras rodaram e qual foi o raciocínio
+        # Em seguida, mostra o "por que/como": quais regras rodaram e qual foi o raciocínio utilizado
         print("\n" + "=" * 62 + "\nEXPLICAÇÃO DO RACIOCÍNIO (COMO E POR QUE)\n" + "=" * 62)
         print("Regras ativadas:", ", ".join(self.regras_ativadas))
         for passo in self.raciocinio:
